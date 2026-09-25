@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Word Popup</string>
+    <string name="accessibility_service_description">Cho phép Word Popup đọc chữ đang hiển thị trên màn hình để highlight các từ vựng có trong danh sách của bạn.</string>
+</resources>

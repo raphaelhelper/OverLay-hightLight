@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.WordPopup" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#2ECC71</item>
+        <item name="colorPrimaryDark">#27AE60</item>
+        <item name="colorAccent">#2ECC71</item>
+    </style>
+</resources>
