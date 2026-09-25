@@ -1,37 +1,127 @@
-name: Extract ZIP into repo
+name: Extract WordPopup Project
 
 on:
-  push:
-    paths:
-      - 'WordPopup.zip'   # đổi tên này nếu file zip bạn up lên tên khác
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 permissions:
   contents: write
-  workflows: write
 
 jobs:
   extract:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Giải nén zip vào thư mục tạm
+      - name: Check ZIP
         run: |
-          rm -rf /tmp/wp_extract
-          mkdir -p /tmp/wp_extract
-          unzip -o WordPopup.zip -d /tmp/wp_extract
+          set -e
 
-      - name: Copy nội dung ra root repo
-        run: |
-          cp -a /tmp/wp_extract/WordPopup/. .
-          rm -f WordPopup.zip
+          if [ ! -f "WordPopup.zip" ]; then
+            echo "ERROR: WordPopup.zip not found!"
+            exit 1
+          fi
 
-      - name: Commit & push
+          echo "ZIP found:"
+          ls -lh WordPopup.zip
+
+      - name: Extract ZIP
         run: |
+          set -e
+
+          echo "=== Extracting WordPopup.zip ==="
+
+          rm -rf extracted
+          mkdir -p extracted
+
+          unzip -o "WordPopup.zip" -d extracted
+
+          echo "=== ZIP contents ==="
+          find extracted -maxdepth 4 -type f | sort
+
+      - name: Move project to repository root
+        run: |
+          set -e
+
+          echo "=== Preparing project ==="
+
+          # ZIP có wrapper:
+          # extracted/WordPopup/
+          #
+          # Đưa toàn bộ nội dung bên trong WordPopup/
+          # ra root của repository.
+
+          PROJECT_DIR="extracted/WordPopup"
+
+          if [ ! -d "$PROJECT_DIR" ]; then
+            echo "ERROR: extracted/WordPopup not found!"
+            exit 1
+          fi
+
+          echo "Project directory:"
+          find "$PROJECT_DIR" -maxdepth 3 -type f | sort
+
+          echo "=== Removing .github from ZIP ==="
+
+          # Không copy workflow từ ZIP.
+          # GITHUB_TOKEN không thể tự push workflow file.
+          rm -rf "$PROJECT_DIR/.github"
+
+          echo "=== Copying project ==="
+
+          cp -a "$PROJECT_DIR/." .
+
+      - name: Clean temporary files
+        run: |
+          set -e
+
+          echo "=== Cleaning ==="
+
+          rm -rf extracted
+          rm -f "WordPopup.zip"
+
+      - name: Show final structure
+        run: |
+          echo "=== Final repository structure ==="
+
+          echo ""
+          echo "Root:"
+          find . -maxdepth 1 -mindepth 1 -printf '%f\n' | sort
+
+          echo ""
+          echo "App source:"
+          find app -maxdepth 5 -type f | sort || true
+
+      - name: Commit project
+        run: |
+          set -e
+
+          echo "=== Git configuration ==="
+
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet || git commit -m "Auto-extract WordPopup.zip vào repo"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          echo ""
+          echo "=== Git status ==="
+          git status --short
+
+          echo ""
+          echo "=== Adding files ==="
+          git add .
+
+          echo ""
+          echo "=== Commit ==="
+
+          git commit -m "Extract WordPopup Android project" || {
+            echo "No changes to commit."
+            exit 0
+          }
+
+          echo ""
+          echo "=== Push ==="
+
           git push
+
+          echo ""
+          echo "=== Extraction completed successfully ==="
